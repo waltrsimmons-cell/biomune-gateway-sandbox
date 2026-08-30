@@ -1,0 +1,45 @@
+name: BIOMUNE Sandbox Deployment
+run-name: BIOMUNE ${{ inputs.biomune_operation_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      biomune_operation_id:
+        description: BIOMUNE operation UUID
+        required: true
+        type: string
+      biomune_target_commit_sha:
+        description: Exact target commit authorized by BIOMUNE
+        required: true
+        type: string
+      biomune_environment:
+        description: Exact registered environment
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  validate-bounded-dispatch:
+    runs-on: ubuntu-latest
+    environment: biomune-sandbox
+    timeout-minutes: 2
+    steps:
+      - name: Validate exact BIOMUNE inputs
+        shell: bash
+        env:
+          OPERATION_ID: ${{ inputs.biomune_operation_id }}
+          TARGET_COMMIT_SHA: ${{ inputs.biomune_target_commit_sha }}
+          TARGET_ENVIRONMENT: ${{ inputs.biomune_environment }}
+        run: |
+          set -euo pipefail
+          [[ "$OPERATION_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$ ]]
+          [[ "$TARGET_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$TARGET_ENVIRONMENT" == "biomune-sandbox" ]]
+          {
+            echo "## BIOMUNE sandbox dispatch accepted"
+            echo ""
+            echo "Operation: \`$OPERATION_ID\`"
+            echo "Target commit: \`$TARGET_COMMIT_SHA\`"
+            echo "Environment: \`$TARGET_ENVIRONMENT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
